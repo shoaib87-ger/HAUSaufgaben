@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="HAUSaufgaben" />
+  <meta name="theme-color" content="#E8A87C" />
+  <meta name="description" content="Familien Haushalts-App – Aufgaben, Einkauf & Kalender gemeinsam verwalten" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <title>HAUSaufgaben</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,400&family=Playfair+Display:wght@600;700&family=Caveat:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { height: 100%; width: 100%; overflow: hidden; }
+    body { font-family: 'DM Sans', 'Nunito', -apple-system, sans-serif; background: #F8F6F2; color: #1a1a2e; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+    ::-webkit-scrollbar { display: none; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .card { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 2px 16px rgba(26,26,46,0.06); transition: transform 0.2s, box-shadow 0.2s; }
+    .card:active { transform: scale(0.985); }
+    .card-animate { animation: slideUp 0.5s ease forwards; }
+    .check-btn { width: 26px; height: 26px; border-radius: 50%; border: 2.5px solid #ccc; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; flex-shrink: 0; }
+    .check-btn.done { border-color: #85CDCA; background: #85CDCA; }
+    .check-btn.done::after { content: "\2713"; color: white; font-size: 14px; font-weight: 700; }
+    .tab-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 0; cursor: pointer; border: none; background: none; transition: all 0.2s; opacity: 0.45; -webkit-tap-highlight-color: transparent; }
+    .tab-btn.active { opacity: 1; }
+    .tab-btn.active .tab-dot { opacity: 1; transform: scaleX(1); }
+    .tab-dot { width: 4px; height: 4px; border-radius: 50%; background: #E8A87C; opacity: 0; transform: scaleX(0); transition: all 0.3s; }
+    .voice-btn { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #E8A87C 0%, #D4A5FF 100%); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 26px; box-shadow: 0 6px 24px rgba(232,168,124,0.4); transition: all 0.3s; -webkit-tap-highlight-color: transparent; }
+    .voice-btn:active { transform: scale(0.92); }
+    .member-pill { padding: 6px 14px; border-radius: 30px; border: 2px solid transparent; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; transition: all 0.2s; background: white; -webkit-tap-highlight-color: transparent; }
+    .member-pill.active { border-color: currentColor; transform: scale(1.05); }
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(26,26,46,0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 100; display: flex; align-items: flex-end; justify-content: center; animation: fadeIn 0.2s ease; }
+    .modal-sheet { background: white; border-radius: 28px 28px 0 0; padding: 28px 24px 40px; width: 100%; max-width: 430px; animation: slideUp 0.3s ease; max-height: 85vh; overflow-y: auto; }
+    input, textarea { font-family: inherit; -webkit-appearance: none; }
+    .input-field { width: 100%; padding: 14px 16px; border-radius: 14px; border: 2px solid #e8e6e2; font-size: 16px; font-family: inherit; outline: none; transition: border-color 0.2s; background: #FAFAF8; }
+    .input-field:focus { border-color: #E8A87C; }
+    .btn-primary { padding: 14px 28px; border-radius: 14px; border: none; background: linear-gradient(135deg, #E8A87C 0%, #D4A5FF 100%); color: white; font-weight: 700; font-size: 15px; cursor: pointer; font-family: inherit; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
+    .btn-primary:active { transform: scale(0.97); opacity: 0.9; }
+    .btn-secondary { padding: 10px 20px; border-radius: 12px; border: 2px solid #e8e6e2; background: white; font-weight: 600; font-size: 14px; cursor: pointer; font-family: inherit; transition: all 0.2s; color: #1a1a2e; -webkit-tap-highlight-color: transparent; }
+    .notepad { background: #FFFEF5; border: 1px solid #E8E4D4; border-radius: 16px; padding: 24px 18px 16px 18px; position: relative; box-shadow: 0 2px 12px rgba(26,26,46,0.05), inset 0 1px 0 #FFFFF0; overflow: hidden; }
+    .notepad::before { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: repeating-linear-gradient(transparent, transparent 31px, #C8C4B4 31px, #C8C4B4 31.5px); pointer-events: none; opacity: 0.25; }
+    .notepad::after { content: ""; position: absolute; top: 0; left: 36px; width: 1.5px; height: 100%; background: #E8A87C55; pointer-events: none; }
+    .notepad-item { padding: 5.25px 0 5.25px 28px; font-family: 'Caveat', cursive; font-size: 20px; cursor: pointer; transition: color 0.3s; line-height: 31px; position: relative; color: #2C2C2C; user-select: none; -webkit-tap-highlight-color: transparent; }
+    .notepad-item:active { background: #F5F3E8; border-radius: 6px; }
+    .notepad-item.done { color: #BBB7A8; text-decoration: line-through; text-decoration-color: #A8A498; text-decoration-thickness: 1.5px; }
+    .notepad-input { border: none; outline: none; background: transparent; font-family: 'Caveat', cursive; font-size: 20px; width: calc(100% - 28px); padding: 5.25px 0; margin-left: 28px; line-height: 31px; color: #2C2C2C; position: relative; z-index: 1; }
+    .notepad-input::placeholder { color: #C8C4B8; font-style: italic; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.2/babel.min.js"></script>
+  <script type="text/babel">
+    const { useState, useEffect, useCallback } = React;
+
+    // ── localStorage persistence ──
+    function loadState(key, fallback) {
+      try { const s = localStorage.getItem('ha_' + key); return s ? JSON.parse(s) : fallback; }
+      catch { return fallback; }
+    }
+    function saveState(key, val) {
+      try { localStorage.setItem('ha_' + key, JSON.stringify(val)); } catch {}
+    }
+
+    const FAMILY_MEMBERS = [
+      { id: 1, name: "Mama", emoji: "👩", color: "#E8A87C" },
+      { id: 2, name: "Papa", emoji: "👨", color: "#85CDCA" },
+      { id: 3, name: "Lena", emoji: "👧", color: "#D4A5FF" },
+      { id: 4, name: "Max", emoji: "👦", color: "#FFD166" },
+    ];
+    const CATEGORIES = {
+      "küche": { icon: "🍳", label: "Küche" }, "bad": { icon: "🛁", label: "Bad" },
+      "garten": { icon: "🌱", label: "Garten" }, "wäsche": { icon: "👕", label: "Wäsche" },
+      "einkauf": { icon: "🛒", label: "Einkauf" }, "kinder": { icon: "🎒", label: "Kinder" },
+      "allgemein": { icon: "🏠", label: "Allgemein" },
+    };
+    const DEFAULT_TASKS = [
+      { id: 1, text: "Spülmaschine ausräumen", category: "küche", assignee: 3, done: false, priority: "mittel", recurring: "täglich" },
+      { id: 2, text: "Rasen mähen", category: "garten", assignee: 2, done: false, priority: "niedrig", recurring: "wöchentlich" },
+      { id: 3, text: "Wäsche waschen", category: "wäsche", assignee: 1, done: true, priority: "hoch", recurring: "täglich" },
+      { id: 4, text: "Kinderzimmer aufräumen", category: "kinder", assignee: 4, done: false, priority: "mittel", recurring: null },
+      { id: 5, text: "Bad putzen", category: "bad", assignee: 2, done: false, priority: "hoch", recurring: "wöchentlich" },
+      { id: 6, text: "Müll rausbringen", category: "allgemein", assignee: 4, done: false, priority: "mittel", recurring: "täglich" },
+    ];
+    const DEFAULT_SHOPPING = [
+      { id: 1, text: "Milch 2L", checked: false }, { id: 2, text: "Vollkornbrot", checked: false },
+      { id: 3, text: "Äpfel 1kg", checked: true }, { id: 4, text: "Hähnchenbrust 500g", checked: false },
+      { id: 5, text: "Spaghetti 2 Pkg.", checked: false }, { id: 6, text: "Tomatensoße 3 Gläser", checked: false },
+      { id: 7, text: "Joghurt 4 Becher", checked: false }, { id: 8, text: "Bananen", checked: true },
+      { id: 9, text: "Butter", checked: false }, { id: 10, text: "Eier 10er", checked: false },
+      { id: 11, text: "Käse Gouda", checked: false }, { id: 12, text: "Gurke", checked: false },
+      { id: 13, text: "Toilettenpapier", checked: false }, { id: 14, text: "Spülmittel", checked: true },
+      { id: 15, text: "Haferflocken", checked: false },
+    ];
+    const DEFAULT_EVENTS = [
+      { id: 1, title: "Zahnarzt Lena", date: "2026-03-02", time: "10:00", member: 3, color: "#D4A5FF" },
+      { id: 2, title: "Fußball Max", date: "2026-03-03", time: "16:00", member: 4, color: "#FFD166" },
+      { id: 3, title: "Elternabend", date: "2026-03-04", time: "19:00", member: 1, color: "#E8A87C" },
+      { id: 4, title: "Teammeeting", date: "2026-03-05", time: "09:00", member: 2, color: "#85CDCA" },
+      { id: 5, title: "Familienausflug", date: "2026-03-08", time: "10:00", member: null, color: "#FF6B6B" },
+      { id: 6, title: "Schwimmkurs", date: "2026-03-03", time: "14:00", member: 3, color: "#D4A5FF" },
+      { id: 7, title: "Geburtstag Oma", date: "2026-03-10", time: "15:00", member: null, color: "#FF6B6B" },
+    ];
+    const DEFAULT_MEALS = [
+      { day: "Mo", meal: "Spaghetti Bolognese", emoji: "🍝", wishes: [{ member: 4, text: "Mit extra Käse!" }] },
+      { day: "Di", meal: "Gemüsesuppe", emoji: "🍲", wishes: [] },
+      { day: "Mi", meal: "Hähnchen m. Reis", emoji: "🍗", wishes: [{ member: 3, text: "Lieber Kartoffeln statt Reis" }] },
+      { day: "Do", meal: "", emoji: "❓", wishes: [{ member: 4, text: "Pizza bitte!!" }, { member: 3, text: "Ja, Pizza! 🍕" }] },
+      { day: "Fr", meal: "Fischstäbchen", emoji: "🐟", wishes: [] },
+      { day: "Sa", meal: "Pfannkuchen", emoji: "🥞", wishes: [{ member: 1, text: "Mit Blaubeeren" }] },
+      { day: "So", meal: "Braten & Knödel", emoji: "🥩", wishes: [] },
+    ];
+
+    function parseVoiceInput(text) {
+      const lower = text.toLowerCase();
+      const shopKW = ["kaufen","brauchen","einkauf","holen","besorgen","milch","brot","eier","butter","käse","obst","gemüse","fleisch","wurst","reis","nudeln","mehl","zucker","öl","wasser","saft","kaffee","tee"];
+      const taskKW = ["putzen","aufräumen","waschen","mähen","kochen","saugen","wischen","bügeln","müll","staubsaugen","abwaschen","trocknen","fegen"];
+      const isShop = shopKW.some(k => lower.includes(k));
+      const isTask = taskKW.some(k => lower.includes(k));
+      const items = text.split(/,|und|&|\n/).map(s => s.trim()).filter(Boolean);
+      return { type: isShop && !isTask ? "shopping" : isTask ? "task" : "unknown", items };
+    }
+
+    function Badge({ children, color = "#E8A87C", style = {} }) {
+      return <span style={{ display: "inline-block", padding: "2px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: color + "22", color, ...style }}>{children}</span>;
+    }
+    function Avatar({ member, size = 36 }) {
+      const m = FAMILY_MEMBERS.find(f => f.id === member);
+      if (!m) return <span style={{ width: size, height: size, borderRadius: "50%", background: "#FF6B6B22", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.5 }}>👨‍👩‍👧‍👦</span>;
+      return <span style={{ width: size, height: size, borderRadius: "50%", background: m.color + "25", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.45, border: `2px solid ${m.color}` }}>{m.emoji}</span>;
+    }
+
+    function App() {
+      const [activeTab, setActiveTab] = useState("home");
+      const [tasks, setTasks] = useState(() => loadState("tasks", DEFAULT_TASKS));
+      const [shopping, setShopping] = useState(() => loadState("shopping", DEFAULT_SHOPPING));
+      const [events] = useState(() => loadState("events", DEFAULT_EVENTS));
+      const [meals, setMeals] = useState(() => loadState("meals", DEFAULT_MEALS));
+      const [showVoiceModal, setShowVoiceModal] = useState(false);
+      const [voiceText, setVoiceText] = useState("");
+      const [parsedResult, setParsedResult] = useState(null);
+      const [selectedMember, setSelectedMember] = useState(null);
+      const [showAddTask, setShowAddTask] = useState(false);
+      const [newTaskText, setNewTaskText] = useState("");
+      const [newTaskAssignee, setNewTaskAssignee] = useState(1);
+      const [newTaskCategory, setNewTaskCategory] = useState("allgemein");
+      const [newShoppingText, setNewShoppingText] = useState("");
+      const [editingMealDay, setEditingMealDay] = useState(null);
+      const [mealEditText, setMealEditText] = useState("");
+      const [wishTexts, setWishTexts] = useState({});
+      const [wishMember, setWishMember] = useState(1);
+
+      // Persist on change
+      useEffect(() => { saveState("tasks", tasks); }, [tasks]);
+      useEffect(() => { saveState("shopping", shopping); }, [shopping]);
+      useEffect(() => { saveState("meals", meals); }, [meals]);
+
+      const toggleTask = (id) => setTasks(t => t.map(x => x.id === id ? { ...x, done: !x.done } : x));
+      const toggleShopping = (id) => setShopping(s => s.map(x => x.id === id ? { ...x, checked: !x.checked } : x));
+      const handleVoiceParse = () => { if (!voiceText.trim()) return; setParsedResult(parseVoiceInput(voiceText)); };
+      const handleAddParsedItems = () => {
+        if (!parsedResult) return;
+        if (parsedResult.type === "shopping") {
+          setShopping(prev => [...prev, ...parsedResult.items.map((item, i) => ({ id: Date.now() + i, text: item, checked: false }))]);
+        } else {
+          setTasks(prev => [...prev, ...parsedResult.items.map((item, i) => ({ id: Date.now() + i, text: item, category: "allgemein", assignee: 1, done: false, priority: "mittel", recurring: null }))]);
+        }
+        setShowVoiceModal(false); setVoiceText(""); setParsedResult(null);
+      };
+      const addNewTask = () => { if (!newTaskText.trim()) return; setTasks(prev => [...prev, { id: Date.now(), text: newTaskText, category: newTaskCategory, assignee: newTaskAssignee, done: false, priority: "mittel", recurring: null }]); setNewTaskText(""); setShowAddTask(false); };
+      const addShoppingItem = () => { if (!newShoppingText.trim()) return; setShopping(prev => [...prev, { id: Date.now(), text: newShoppingText, checked: false }]); setNewShoppingText(""); };
+      const clearCheckedShopping = () => setShopping(prev => prev.filter(s => !s.checked));
+      const saveMealEdit = () => { if (!editingMealDay) return; setMeals(prev => prev.map(m => m.day === editingMealDay ? { ...m, meal: mealEditText, emoji: mealEditText ? "🍽️" : "❓" } : m)); setEditingMealDay(null); setMealEditText(""); };
+      const addWish = (day) => { const wt = wishTexts[day]; if (!wt || !wt.trim()) return; setMeals(prev => prev.map(m => m.day === day ? { ...m, wishes: [...m.wishes, { member: wishMember, text: wt }] } : m)); setWishTexts(prev => ({ ...prev, [day]: "" })); };
+
+      const filteredTasks = selectedMember ? tasks.filter(t => t.assignee === selectedMember) : tasks;
+      const today = new Date();
+      const dayNames = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+      const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+      const tabs = [
+        { id: "home", icon: "🏠", label: "Home" },
+        { id: "tasks", icon: "✅", label: "Aufgaben" },
+        { id: "shopping", icon: "🛒", label: "Einkauf" },
+        { id: "calendar", icon: "📅", label: "Kalender" },
+        { id: "more", icon: "⭐", label: "Mehr" },
+      ];
+
+      return (
+        <div style={{ width: "100%", maxWidth: 430, margin: "0 auto", height: "100vh", background: "linear-gradient(180deg, #F8F6F2 0%, #FFF9F3 50%, #F2F0EC 100%)", position: "relative", display: "flex", flexDirection: "column" }}>
+          {/* HEADER */}
+          <div style={{ padding: "env(safe-area-inset-top, 48px) 24px 12px", paddingTop: "max(env(safe-area-inset-top), 48px)", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+            <div>
+              <p style={{ fontSize: 13, color: "#888", fontWeight: 500 }}>{dayNames[today.getDay()]}, {today.getDate()}. {monthNames[today.getMonth()]}</p>
+              <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 700, marginTop: 2, background: "linear-gradient(135deg, #1a1a2e, #E8A87C)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Hallo, Familie! 👋</h1>
+            </div>
+            <div style={{ display: "flex" }}>
+              {FAMILY_MEMBERS.map((m, i) => <span key={m.id} style={{ marginLeft: i > 0 ? -8 : 0, zIndex: 4 - i }}><Avatar member={m.id} size={34} /></span>)}
+            </div>
+          </div>
+
+          {/* SCROLLABLE CONTENT */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 100px", WebkitOverflowScrolling: "touch" }}>
+
+            {/* ═══ HOME ═══ */}
+            {activeTab === "home" && <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingBottom: 20 }}>
+              <div className="card card-animate" style={{ animationDelay: "0.05s" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                  <h3 style={{ fontSize: 16, fontWeight: 700 }}>📌 Heute zu erledigen</h3>
+                  <Badge color="#FF6B6B">{tasks.filter(t => !t.done).length} offen</Badge>
+                </div>
+                {tasks.filter(t => !t.done).slice(0, 4).map(task => (
+                  <div key={task.id} onClick={() => toggleTask(task.id)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid #f0eeea", cursor: "pointer" }}>
+                    <div className={`check-btn ${task.done ? "done" : ""}`} />
+                    <div style={{ flex: 1 }}><p style={{ fontSize: 14, fontWeight: 500 }}>{task.text}</p><p style={{ fontSize: 11, color: "#aaa", marginTop: 2 }}>{CATEGORIES[task.category]?.icon} {CATEGORIES[task.category]?.label}</p></div>
+                    <Avatar member={task.assignee} size={28} />
+                  </div>
+                ))}
+              </div>
+
+              {/* Essensplan */}
+              <div className="card card-animate" style={{ animationDelay: "0.1s" }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 14 }}>🍽️ Essensplan</h3>
+                {meals.map((m) => {
+                  const isToday = dayNames[today.getDay()] === m.day;
+                  const isEditing = editingMealDay === m.day;
+                  return (
+                    <div key={m.day} style={{ background: isToday ? "linear-gradient(135deg, #E8A87C10, #D4A5FF10)" : "#FAFAF8", border: isToday ? "2px solid #E8A87C" : "1.5px solid #f0eeea", borderRadius: 14, padding: "10px 12px", marginBottom: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: isToday ? "#E8A87C" : "#999", minWidth: 22, textTransform: "uppercase" }}>{m.day}</span>
+                        <span style={{ fontSize: 18 }}>{m.emoji}</span>
+                        {!isEditing ? (
+                          <span onClick={() => { setEditingMealDay(m.day); setMealEditText(m.meal); }} style={{ flex: 1, fontSize: 14, fontWeight: 500, color: m.meal ? "#1a1a2e" : "#ccc", cursor: "pointer" }}>{m.meal || "Tippen zum eintragen..."}</span>
+                        ) : (
+                          <div style={{ flex: 1, display: "flex", gap: 6 }}>
+                            <input value={mealEditText} onChange={e => setMealEditText(e.target.value)} onKeyDown={e => e.key === "Enter" && saveMealEdit()} placeholder="Gericht eintragen..." autoFocus style={{ flex: 1, border: "1.5px solid #E8A87C", borderRadius: 10, padding: "5px 10px", fontSize: 13, outline: "none", fontFamily: "inherit", background: "white" }} />
+                            <button onClick={saveMealEdit} style={{ background: "#85CDCA", border: "none", borderRadius: 10, padding: "5px 14px", color: "white", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>✓</button>
+                          </div>
+                        )}
+                      </div>
+                      {m.wishes.length > 0 && <div style={{ marginTop: 6, marginLeft: 30, display: "flex", flexDirection: "column", gap: 2 }}>
+                        {m.wishes.map((w, wi) => { const wm = FAMILY_MEMBERS.find(f => f.id === w.member); return <div key={wi} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#888" }}><span style={{ fontSize: 12 }}>{wm?.emoji}</span><span style={{ fontStyle: "italic" }}>„{w.text}"</span></div>; })}
+                      </div>}
+                      {!isEditing && <div style={{ marginTop: 5, marginLeft: 30, display: "flex", gap: 5, alignItems: "center" }}>
+                        <select value={wishMember} onChange={e => setWishMember(Number(e.target.value))} style={{ border: "1px solid #eee", borderRadius: 8, padding: "2px 4px", fontSize: 11, background: "white", cursor: "pointer", color: "#777" }}>
+                          {FAMILY_MEMBERS.map(fm => <option key={fm.id} value={fm.id}>{fm.emoji} {fm.name}</option>)}
+                        </select>
+                        <input placeholder="Wunsch..." value={wishTexts[m.day] || ""} onChange={e => setWishTexts(p => ({ ...p, [m.day]: e.target.value }))} onKeyDown={e => { if (e.key === "Enter") addWish(m.day); }} style={{ flex: 1, border: "1px solid #eee", borderRadius: 8, padding: "3px 8px", fontSize: 11, outline: "none", background: "white", fontFamily: "inherit", color: "#555" }} />
+                        <button onClick={() => addWish(m.day)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, opacity: wishTexts[m.day] ? 0.8 : 0.3 }}>💬</button>
+                      </div>}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="card card-animate" style={{ animationDelay: "0.15s" }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 14 }}>📅 Nächste Termine</h3>
+                {events.filter(e => e.date >= today.toISOString().split("T")[0]).slice(0, 4).map(ev => (
+                  <div key={ev.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0", borderBottom: "1px solid #f0eeea" }}>
+                    <div style={{ width: 4, height: 36, borderRadius: 3, background: ev.color }} />
+                    <div style={{ flex: 1 }}><p style={{ fontSize: 14, fontWeight: 600 }}>{ev.title}</p><p style={{ fontSize: 11, color: "#888" }}>{new Date(ev.date).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "short" })} · {ev.time}</p></div>
+                    <Avatar member={ev.member} size={26} />
+                  </div>
+                ))}
+              </div>
+
+              <div className="card card-animate" style={{ animationDelay: "0.2s" }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 14 }}>🏆 Fleißigste diese Woche</h3>
+                {FAMILY_MEMBERS.map(m => { const mt = tasks.filter(t => t.assignee === m.id); const done = mt.filter(t => t.done).length; const total = mt.length; const pct = total > 0 ? (done / total) * 100 : 0; return (
+                  <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0" }}>
+                    <Avatar member={m.id} size={30} />
+                    <div style={{ flex: 1 }}><div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}><span style={{ fontSize: 13, fontWeight: 600 }}>{m.name}</span><span style={{ fontSize: 12, color: "#888" }}>{done}/{total}</span></div><div style={{ height: 6, background: "#f0eeea", borderRadius: 3, overflow: "hidden" }}><div style={{ height: "100%", width: pct + "%", background: m.color, borderRadius: 3, transition: "width 0.8s ease" }} /></div></div>
+                  </div>); })}
+              </div>
+            </div>}
+
+            {/* ═══ TASKS ═══ */}
+            {activeTab === "tasks" && <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingBottom: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22 }}>Aufgaben</h2>
+                <button className="btn-secondary" onClick={() => setShowAddTask(true)} style={{ fontSize: 13, padding: "8px 16px" }}>+ Neu</button>
+              </div>
+              <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+                <div className={`member-pill ${!selectedMember ? "active" : ""}`} onClick={() => setSelectedMember(null)} style={{ color: "#555", borderColor: !selectedMember ? "#555" : "transparent" }}>Alle</div>
+                {FAMILY_MEMBERS.map(m => <div key={m.id} className={`member-pill ${selectedMember === m.id ? "active" : ""}`} onClick={() => setSelectedMember(selectedMember === m.id ? null : m.id)} style={{ color: m.color, borderColor: selectedMember === m.id ? m.color : "transparent" }}>{m.emoji} {m.name}</div>)}
+              </div>
+              {Object.entries(CATEGORIES).map(([key, cat]) => { const ct = filteredTasks.filter(t => t.category === key); if (!ct.length) return null; return (
+                <div key={key} className="card" style={{ padding: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}><span style={{ fontSize: 18 }}>{cat.icon}</span><span style={{ fontSize: 15, fontWeight: 700 }}>{cat.label}</span><Badge color="#85CDCA">{ct.filter(t => !t.done).length}</Badge></div>
+                  {ct.map(task => (
+                    <div key={task.id} onClick={() => toggleTask(task.id)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid #f5f3ef", cursor: "pointer", opacity: task.done ? 0.5 : 1 }}>
+                      <div className={`check-btn ${task.done ? "done" : ""}`} />
+                      <div style={{ flex: 1 }}><p style={{ fontSize: 14, fontWeight: 500, textDecoration: task.done ? "line-through" : "none" }}>{task.text}</p><div style={{ display: "flex", gap: 6, marginTop: 4 }}>{task.priority === "hoch" && <Badge color="#FF6B6B">Wichtig</Badge>}{task.recurring && <Badge color="#85CDCA">{task.recurring}</Badge>}</div></div>
+                      <Avatar member={task.assignee} size={28} />
+                    </div>
+                  ))}
+                </div>); })}
+            </div>}
+
+            {/* ═══ SHOPPING ═══ */}
+            {activeTab === "shopping" && <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingBottom: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22 }}>Einkaufsliste</h2>
+                {shopping.filter(s => s.checked).length > 0 && <button className="btn-secondary" onClick={clearCheckedShopping} style={{ fontSize: 11, padding: "6px 12px", color: "#FF6B6B", borderColor: "#FF6B6B44" }}>Erledigte löschen</button>}
+              </div>
+              <div className="notepad">
+                {shopping.filter(s => !s.checked).map(item => <div key={item.id} className="notepad-item" onClick={() => toggleShopping(item.id)}>{item.text}</div>)}
+                <input className="notepad-input" placeholder="Neuen Artikel schreiben..." value={newShoppingText} onChange={e => setNewShoppingText(e.target.value)} onKeyDown={e => { if (e.key === "Enter") addShoppingItem(); }} />
+                {shopping.filter(s => s.checked).length > 0 && <div style={{ borderTop: "1px dashed #D4CFC0", margin: "4px 0 2px 28px", opacity: 0.4 }} />}
+                {shopping.filter(s => s.checked).map(item => <div key={item.id} className="notepad-item done" onClick={() => toggleShopping(item.id)}>{item.text}</div>)}
+              </div>
+              <p style={{ fontSize: 11, color: "#bbb", textAlign: "center" }}>Antippen = durchstreichen · Enter = hinzufügen</p>
+            </div>}
+
+            {/* ═══ CALENDAR ═══ */}
+            {activeTab === "calendar" && <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingBottom: 20 }}>
+              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22 }}>Familienkalender</h2>
+              <div className="card" style={{ padding: 16 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, textAlign: "center" }}>
+                  {Array.from({ length: 7 }, (_, i) => { const d = new Date(today); d.setDate(today.getDate() - today.getDay() + 1 + i); const ds = d.toISOString().split("T")[0]; const de = events.filter(e => e.date === ds); const isT = d.toDateString() === today.toDateString(); return (
+                    <div key={i} style={{ padding: "10px 4px", borderRadius: 14, background: isT ? "linear-gradient(135deg, #E8A87C, #D4A5FF)" : "transparent" }}>
+                      <p style={{ fontSize: 11, fontWeight: 600, color: isT ? "white" : "#888" }}>{dayNames[(i + 1) % 7]}</p>
+                      <p style={{ fontSize: 18, fontWeight: 700, color: isT ? "white" : "#1a1a2e", margin: "4px 0" }}>{d.getDate()}</p>
+                      <div style={{ display: "flex", gap: 2, justifyContent: "center" }}>{de.slice(0, 3).map(e => <div key={e.id} style={{ width: 6, height: 6, borderRadius: "50%", background: isT ? "white" : e.color }} />)}</div>
+                    </div>); })}
+                </div>
+              </div>
+              {Array.from({ length: 7 }, (_, i) => { const d = new Date(today); d.setDate(today.getDate() + i); const ds = d.toISOString().split("T")[0]; const de = events.filter(e => e.date === ds); if (!de.length) return null; return (
+                <div key={i}>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: "#888", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>{i === 0 ? "Heute" : i === 1 ? "Morgen" : d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "short" })}</p>
+                  {de.map(ev => <div key={ev.id} className="card" style={{ padding: 14, marginBottom: 8, borderLeft: `4px solid ${ev.color}` }}><div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}><div><p style={{ fontSize: 15, fontWeight: 600 }}>{ev.title}</p><p style={{ fontSize: 12, color: "#888", marginTop: 2 }}>⏰ {ev.time} Uhr</p></div><Avatar member={ev.member} size={30} /></div></div>)}
+                </div>); })}
+            </div>}
+
+            {/* ═══ MORE ═══ */}
+            {activeTab === "more" && <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingBottom: 20 }}>
+              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22 }}>Mehr</h2>
+              {[{icon:"💰",title:"Haushaltskasse",desc:"Gemeinsame Ausgaben"},{icon:"📋",title:"Putzplan",desc:"Wöchentlicher Reinigungsplan"},{icon:"🎉",title:"Belohnungen",desc:"Punkte für Kinder"},{icon:"📝",title:"Notizen",desc:"Geteilte Familiennotizen"},{icon:"📸",title:"Fotowand",desc:"Familienmomente teilen"},{icon:"🎯",title:"Familienziele",desc:"Gemeinsame Ziele setzen"},{icon:"⚙️",title:"Einstellungen",desc:"Profil & Benachrichtigungen"}].map((item, i) => (
+                <div key={i} className="card" style={{ padding: 16, display: "flex", alignItems: "center", gap: 14, cursor: "pointer" }}>
+                  <span style={{ fontSize: 28, width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", background: "#FAFAF8", borderRadius: 14 }}>{item.icon}</span>
+                  <div><p style={{ fontSize: 15, fontWeight: 600 }}>{item.title}</p><p style={{ fontSize: 12, color: "#888" }}>{item.desc}</p></div>
+                  <span style={{ marginLeft: "auto", color: "#ccc", fontSize: 18 }}>›</span>
+                </div>
+              ))}
+            </div>}
+          </div>
+
+          {/* MODALS */}
+          {showVoiceModal && <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowVoiceModal(false); setParsedResult(null); setVoiceText(""); } }}>
+            <div className="modal-sheet">
+              <div style={{ width: 40, height: 4, borderRadius: 2, background: "#ddd", margin: "0 auto 20px" }} />
+              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, marginBottom: 4 }}>🎤 Diktieren</h3>
+              <p style={{ fontSize: 13, color: "#888", marginBottom: 16 }}>Die App erkennt automatisch, ob es Aufgaben oder Einkäufe sind.</p>
+              <textarea className="input-field" rows={4} placeholder="z.B. 'Milch, Eier und Butter kaufen' oder 'Bad putzen und Wäsche waschen'" value={voiceText} onChange={e => { setVoiceText(e.target.value); setParsedResult(null); }} style={{ resize: "none", marginBottom: 12 }} />
+              {!parsedResult && <button className="btn-primary" style={{ width: "100%" }} onClick={handleVoiceParse}>🔍 Analysieren</button>}
+              {parsedResult && <div style={{ animation: "slideUp 0.3s ease" }}>
+                <div style={{ padding: 16, background: parsedResult.type === "shopping" ? "#E8A87C15" : "#85CDCA15", borderRadius: 16, marginBottom: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}><span style={{ fontSize: 20 }}>{parsedResult.type === "shopping" ? "🛒" : "✅"}</span><span style={{ fontWeight: 700, fontSize: 15 }}>{parsedResult.type === "shopping" ? "Einkaufsliste erkannt" : "Aufgaben erkannt"}</span></div>
+                  {parsedResult.items.map((item, i) => <div key={i} style={{ padding: "6px 0", borderBottom: i < parsedResult.items.length - 1 ? "1px solid #e8e6e233" : "none", fontSize: 14 }}>{parsedResult.type === "shopping" ? "🛒" : "✅"} {item}</div>)}
+                </div>
+                <div style={{ display: "flex", gap: 10 }}><button className="btn-secondary" style={{ flex: 1 }} onClick={() => { setParsedResult(null); setVoiceText(""); }}>Abbrechen</button><button className="btn-primary" style={{ flex: 1 }} onClick={handleAddParsedItems}>Hinzufügen ✓</button></div>
+              </div>}
+            </div>
+          </div>}
+
+          {showAddTask && <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowAddTask(false); }}>
+            <div className="modal-sheet">
+              <div style={{ width: 40, height: 4, borderRadius: 2, background: "#ddd", margin: "0 auto 20px" }} />
+              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, marginBottom: 16 }}>Neue Aufgabe</h3>
+              <input className="input-field" placeholder="Was muss erledigt werden?" value={newTaskText} onChange={e => setNewTaskText(e.target.value)} style={{ marginBottom: 14 }} />
+              <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Zuweisen an:</p>
+              <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+                {FAMILY_MEMBERS.map(m => <div key={m.id} className={`member-pill ${newTaskAssignee === m.id ? "active" : ""}`} onClick={() => setNewTaskAssignee(m.id)} style={{ color: m.color, borderColor: newTaskAssignee === m.id ? m.color : "transparent" }}>{m.emoji} {m.name}</div>)}
+              </div>
+              <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Kategorie:</p>
+              <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+                {Object.entries(CATEGORIES).map(([key, cat]) => <div key={key} className={`member-pill ${newTaskCategory === key ? "active" : ""}`} onClick={() => setNewTaskCategory(key)} style={{ color: "#555", borderColor: newTaskCategory === key ? "#E8A87C" : "transparent" }}>{cat.icon} {cat.label}</div>)}
+              </div>
+              <button className="btn-primary" style={{ width: "100%" }} onClick={addNewTask}>Aufgabe erstellen</button>
+            </div>
+          </div>}
+
+          {/* TAB BAR */}
+          <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, background: "rgba(255,255,255,0.92)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderTop: "1px solid #e8e6e222", display: "flex", justifyContent: "space-around", alignItems: "flex-end", paddingBottom: "max(env(safe-area-inset-bottom), 16px)", paddingTop: 6, zIndex: 50 }}>
+            {tabs.map(tab => (
+              <button key={tab.id} className={`tab-btn ${activeTab === tab.id ? "active" : ""}`} onClick={() => setActiveTab(tab.id)}>
+                <span style={{ fontSize: 20 }}>{tab.icon}</span>
+                <span style={{ fontSize: 10, fontWeight: 600, color: activeTab === tab.id ? "#1a1a2e" : "#999" }}>{tab.label}</span>
+                <div className="tab-dot" />
+              </button>
+            ))}
+          </div>
+          <button className="voice-btn" onClick={() => setShowVoiceModal(true)} style={{ position: "fixed", bottom: "max(calc(env(safe-area-inset-bottom) + 70px), 86px)", right: "calc(50% - 195px)", zIndex: 51 }}>🎤</button>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+  <script>
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').then(r => console.log('SW registered:', r.scope)).catch(e => console.log('SW failed:', e));
+      });
+    }
+  </script>
+</body>
+</html>
